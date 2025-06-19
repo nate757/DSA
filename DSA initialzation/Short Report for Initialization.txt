@@ -1,0 +1,25 @@
+1. Data Structures Used
+std::string: to store the path of the repository directory.
+
+<filesystem>: used to create and check the existence of directories.
+
+2. Design Decisions
+Used std::filesystem from C++17 to manage directory creation, as it's standard, cross-platform, and easier than using OS commands.
+
+Kept initialization minimal to allow easy expansion for file tracking, commits, etc.
+
+3. Limitations
+Only creates a directory; doesn’t set up tracking structures or save metadata.
+
+Doesn’t handle errors (e.g., permission issues, disk errors).
+
+Doesn’t support reinitializing (no overwrite or clean options).
+
+4. Future Improvements
+Create subfolders inside .minigit/ for commits, branches, logs.
+
+Add a configuration file to store initial settings.
+
+Include metadata initialization (e.g., current branch, latest commit).
+
+Log initialization date and user.
