@@ -1,0 +1,55 @@
+Checkout and Merge - Short Report
+
+1. Data Structures Used:
+
+- `struct Commit`:
+  Stores the commit ID, a map of versioned files (fileSnapshots), and a parent commit ID.
+  This structure models each saved version of the project.
+
+- `unordered_map<std::string, Commit> commitMap`:
+  Used to store all commits, allowing fast lookup by commit ID.
+
+- `unordered_map<std::string, std::string> branches`:
+  Maps each branch name to its latest commit ID, enabling branching and merging functionality.
+
+- `std::string currentCommitID` and `currentBranch`:
+  Track the state of the current working branch and the most recent commit.
+
+2. Design Decisions:
+
+- **Modular functions**:
+  The `checkout()` and `merge()` functions were designed to be clean and modular, calling helper methods like `restoreFiles()` and `resolveConflicts()` to keep responsibilities separate.
+
+- **File restoration**:
+  The `checkout()` function restores the working directory to a specific commit by copying files from the `.minigit` repository to the root directory, using version hashes.
+
+- **Basic conflict detection**:
+  The `merge()` function compares file snapshots from both branches. If the same file has different versions in each commit, a conflict is detected.
+
+- **Conflict resolution strategy**:
+  Conflicting files are duplicated with a `.merged` suffix to avoid overwriting. This makes conflicts visible and allows for manual resolution.
+
+- **Commit ID generation**:
+  A simple counter-based `generateCommitID()` function was used temporarily to create unique IDs. This can be replaced with timestamps or hashing later.
+
+3. Limitations
+
+- **Conflict resolution is primitive**:
+  The current implementation does not merge file contents line-by-line. It simply detects version mismatches and duplicates the file.
+
+- **No support for automatic merge commits**:
+  After a merge, no new commit is automatically created to record the merge event.
+
+- **No fast-forward merges or detailed branch history**:
+  The system doesn’t handle Git-style fast-forward merges or maintain full parent-child lineage across branches.
+
+- **No error rollback or validation**:
+  If an error occurs mid-merge, there’s no undo or rollback mechanism.
+
+4. Future Improvements:
+
+- Implement **line-based diff and merge** tools to provide more intelligent conflict resolution.
+- Support **merge commits** to record merge events in history.
+- Add **logging** or visualization tools to display commit history and branches clearly.
+- Replace simple commit ID generation with **timestamp-based** or **hash-based** systems for uniqueness.
+- Add UI or CLI prompts to help users manually resolve conflicts in a friendlier way.
