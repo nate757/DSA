@@ -1,17 +1,17 @@
 
 #include "MiniGit.hpp"
-
 #include <iostream>
 #include <filesystem>
+#include<fstream>
 
 namespace fs = std::filesystem;
 
 MiniGit::MiniGit() {
-    repoDir = ".minigit"; // default repo folder
+    repoDir = ".minigit"; //  this is our default repo folder
 }
 
-MiniGit::~MiniGit() {}  //destuctor currently empty,but defined for completeness/future use
-
+MiniGit::~MiniGit() {}  //destuctor
+// Initialisor tha prepares our repository
 void MiniGit::init() {
     if (!fs::exists(repoDir)) {
         fs::create_directory(repoDir);
@@ -62,7 +62,7 @@ void MiniGit::merge(const std::string& branchName) {
     std::cout << "Merged branch '" << branchName << "' into '" << currentBranch << "'.\n";
 }
 
-// Helper: Restores files from a given commit
+//  This is a Helper function that restores files from a given commit
 void MiniGit::restoreFiles(const Commit& commit) {
     for (const auto& [filename, fileHash] : commit.fileSnapshots) {
         std::string versionPath = repoDir + "/" + fileHash;
@@ -73,7 +73,7 @@ void MiniGit::restoreFiles(const Commit& commit) {
                 continue;
             }
 
-            // Ensure we safely overwrite the existing file
+            //  We have to ensure we safely overwrite the existing file
             if (fs::exists(filename)) {
                 fs::remove(filename);
             }
@@ -86,7 +86,7 @@ void MiniGit::restoreFiles(const Commit& commit) {
     }
 }
 
-// Helper: Simple merge conflict resolution logic (basic example)
+// This is a  helper function that helps in  Simple merge conflict resolution logic
 void MiniGit::resolveConflicts(const Commit& current, const Commit& other) {
     for (const auto& [filename, otherVersion] : other.fileSnapshots) {
         const auto& currentIt = current.fileSnapshots.find(filename);
@@ -103,6 +103,7 @@ void MiniGit::resolveConflicts(const Commit& current, const Commit& other) {
         }
     }
 }
+// Adder that stages the files we want to commit
 void MiniGit::add(const std::string& fileName) {
     if (!fs::exists(fileName)) {
         std::cerr << "File '" << fileName << "' does not exist.\n";
@@ -120,6 +121,7 @@ void MiniGit::add(const std::string& fileName) {
     stagingArea[fileName] = hash;
     std::cout << "Staged '" << fileName << "' for commit.\n";
 }
+// Commites our files that we staged earlier with a message
 void MiniGit::commit(const std::string& message) {
     if (stagingArea.empty()) {
         std::cout << "No files staged. Use `add` before committing.\n";
@@ -144,6 +146,7 @@ void MiniGit::commit(const std::string& message) {
 
     std::cout << "✅ Commit '" << currentCommitID << "' created with message: " << message << "\n";
 }
+// Log or list of commites we made so far
 void MiniGit::log() const {
     std::string commitID = currentCommitID;
 
@@ -154,6 +157,7 @@ void MiniGit::log() const {
         commitID = c.parentID;
     }
 }
+// Different branches to work on
 void MiniGit::branch(const std::string& branchName) {
     if (branches.count(branchName)) {
         std::cerr << "Branch '" << branchName << "' already exists.\n";
@@ -163,6 +167,7 @@ void MiniGit::branch(const std::string& branchName) {
     branches[branchName] = currentCommitID;
     std::cout << "🌿 Created branch '" << branchName << "' from commit " << currentCommitID << ".\n";
 }
+// helper of branch
 void MiniGit::checkoutBranch(const std::string& branchName) {
     if (!branches.count(branchName)) {
         std::cerr << "Branch '" << branchName << "' does not exist.\n";
@@ -177,10 +182,58 @@ void MiniGit::checkoutBranch(const std::string& branchName) {
         restoreFiles(commitMap[currentCommitID]);
     }
 }
+// Special feature that compares two commits made at a different time line by line and givrd us the difference
+void MiniGit::diff(const std::string& fileName) {
+    if (currentCommitID.empty()) {
+        std::cout << "No commits yet. Nothing to diff.\n";
+        return;
+    }
+
+    const Commit& lastCommit = commitMap[currentCommitID];
+    auto it = lastCommit.fileSnapshots.find(fileName);
+
+    if (it == lastCommit.fileSnapshots.end()) {
+        std::cout << "File not found in last commit. Nothing to compare.\n";
+        return;
+    }
+
+    std::string lastVersionPath = repoDir + "/" + it->second;
+
+    std::ifstream committedFile(lastVersionPath);
+    std::ifstream workingFile(fileName);
+
+    if (!committedFile.is_open() || !workingFile.is_open()) {
+        std::cerr << "Could not open files for comparison.\n";
+        return;
+    }
+
+    std::string lineCommitted, lineWorking;
+    int lineNum = 1;
+    bool hasDiff = false;
+
+    while (std::getline(committedFile, lineCommitted) || std::getline(workingFile, lineWorking)) {
+        // Fill empty lines to keep line alignment
+        if (committedFile.eof()) lineCommitted = "";
+        if (workingFile.eof()) lineWorking = "";
+
+        if (lineCommitted != lineWorking) {
+            hasDiff = true;
+            std::cout << "Line " << lineNum << ":\n";
+            std::cout << "  - Committed: \"" << lineCommitted << "\"\n";
+            std::cout << "  + Working:   \"" << lineWorking << "\"\n";
+        }
+        ++lineNum;
+    }
+
+    if (!hasDiff) {
+        std::cout << "✅ No differences found. Working copy matches last commit.\n";
+    }
+}
 
 
-// Helper: Generates a dummy commit ID (you can improve with hashes or timestamps)
+// Helper function that Generates a dummy commit ID to differentiate our commits
 std::string MiniGit::generateCommitID() {
     static int counter = 0;
     return "commit" + std::to_string(++counter);
 }
+
